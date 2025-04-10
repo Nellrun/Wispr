@@ -65,3 +65,12 @@ logs/
 .Trashes
 ehthumbs.db
 Thumbs.db 
+
+# Heroku
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+.cursor/
+logs/
