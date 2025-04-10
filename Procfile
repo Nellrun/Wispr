@@ -1,1 +1,1 @@
-web: python -m wispr_bot 
+worker: python -m wispr_bot 
