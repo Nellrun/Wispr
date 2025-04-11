@@ -41,7 +41,8 @@ async def new_chat_command(message: Message, state: FSMContext, user: User) -> N
     """Start creating a new chat."""
     await message.answer(
         "🆕 Создание нового чата\n\n"
-        "Пожалуйста, введите название для вашего нового чата:"
+        "Пожалуйста, введите название для вашего нового чата:",
+        parse_mode="Markdown"
     )
     
     # Set state to waiting for title
@@ -52,7 +53,7 @@ async def new_chat_command(message: Message, state: FSMContext, user: User) -> N
 async def cancel_new_chat(message: Message, state: FSMContext) -> None:
     """Cancel new chat creation."""
     await state.clear()
-    await message.answer("❌ Создание нового чата отменено")
+    await message.answer("❌ Создание нового чата отменено", parse_mode="Markdown")
 
 
 @router.message(StateFilter(ChatStates.waiting_for_title))
@@ -79,9 +80,10 @@ async def process_new_chat_title(message: Message, state: FSMContext, user: User
     await state.update_data(chat_id=chat.id)
     
     await message.answer(
-        f"✅ Создан новый чат: \"{title}\"\n\n"
-        f"Теперь вы общаетесь с моделью {model}.\n"
-        f"Отправьте любое сообщение, чтобы начать разговор."
+        f"✅ Создан новый чат: \"*{title}*\"\n\n"
+        f"Теперь вы общаетесь с моделью `{model}`.\n"
+        f"Отправьте любое сообщение, чтобы начать разговор.",
+        parse_mode="Markdown"
     )
     logger.info(f"User {user.telegram_id} created new chat {chat.id}: {title}")
 
@@ -146,9 +148,10 @@ async def select_chat(callback: CallbackQuery, state: FSMContext, user: User) ->
     
     await callback.answer()
     await callback.message.answer(
-        f"✅ Переключено на чат: \"{chat.title}\"\n\n"
-        f"Теперь вы общаетесь с моделью {chat.model}.\n"
-        f"Отправьте любое сообщение, чтобы продолжить разговор."
+        f"✅ Переключено на чат: \"*{chat.title}*\"\n\n"
+        f"Теперь вы общаетесь с моделью `{chat.model}`.\n"
+        f"Отправьте любое сообщение, чтобы продолжить разговор.",
+        parse_mode="Markdown"
     )
     logger.info(f"User {user.telegram_id} switched to chat {chat.id}")
 
@@ -228,7 +231,8 @@ async def current_chat_info(message: Message, user: User, state: FSMContext) -> 
     if not chat_id:
         await message.answer(
             "❓ У вас нет активного чата.\n\n"
-            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий."
+            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий.",
+            parse_mode="Markdown"
         )
         return
     
@@ -241,18 +245,20 @@ async def current_chat_info(message: Message, user: User, state: FSMContext) -> 
         await state.clear()
         await message.answer(
             "❓ Ваш активный чат не найден.\n\n"
-            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий."
+            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий.",
+            parse_mode="Markdown"
         )
         return
     
     # Show chat info
     msg_count = len(chat.messages)
     await message.answer(
-        f"📝 Текущий чат: \"{chat.title}\"\n\n"
-        f"• Модель: {chat.model}\n"
+        f"📝 Текущий чат: \"*{chat.title}*\"\n\n"
+        f"• Модель: `{chat.model}`\n"
         f"• Создан: {chat.created_at.strftime('%Y-%m-%d')}\n"
         f"• Сообщений: {msg_count}\n\n"
-        f"Используйте /chats, чтобы переключиться на другой чат."
+        f"Используйте /chats, чтобы переключиться на другой чат.",
+        parse_mode="Markdown"
     )
 
 
@@ -329,7 +335,7 @@ async def process_chat_message(message: Message, state: FSMContext, user: User) 
         await db.add_message(chat_id, "user", current_user_message)
         
         # Отправляем временное сообщение "Генерация ответа..." и сохраняем его ID для обновления
-        temp_message = await message.answer("⏳ Генерация ответа...")
+        temp_message = await message.answer("⏳ *Генерация ответа*...", parse_mode="Markdown")
         
         # Send "typing" action
         await message.bot.send_chat_action(message.chat.id, "typing")
@@ -343,9 +349,10 @@ async def process_chat_message(message: Message, state: FSMContext, user: User) 
         # Проверяем, что у нас есть сообщения в контексте
         if not context_messages:
             await message.bot.edit_message_text(
-                "⚠️ Ошибка: Не удалось сформировать контекст сообщений для запроса.",
+                "⚠️ *Ошибка*: Не удалось сформировать контекст сообщений для запроса.",
                 chat_id=message.chat.id,
-                message_id=temp_message.message_id
+                message_id=temp_message.message_id,
+                parse_mode="Markdown"
             )
             return
         
@@ -380,10 +387,35 @@ async def process_chat_message(message: Message, state: FSMContext, user: User) 
                             await message.bot.edit_message_text(
                                 response_chunk + " ⏳",  # Добавляем индикатор, что генерация продолжается
                                 chat_id=message.chat.id,
-                                message_id=temp_message.message_id
+                                message_id=temp_message.message_id,
+                                parse_mode="Markdown"  # Добавляем поддержку Markdown
                             )
                     except Exception as e:
-                        logger.warning(f"Error updating partial response: {e}")
+                        logger.warning(f"Error updating partial response with markdown: {e}")
+                        # Если ошибка связана с разметкой Markdown, пробуем отправить без разметки
+                        try:
+                            # Пробуем очистить или исправить проблемные символы Markdown
+                            clean_response = response_chunk.replace("```", "")  # Убираем блоки кода
+                            clean_response = clean_response.replace("`", "'")   # Заменяем инлайн-код на кавычки
+                            
+                            await message.bot.edit_message_text(
+                                clean_response + " ⏳",
+                                chat_id=message.chat.id,
+                                message_id=temp_message.message_id,
+                                parse_mode="Markdown"
+                            )
+                        except Exception as e2:
+                            logger.warning(f"Error updating with cleaned markdown: {e2}")
+                            # Если и это не сработало, отправляем без форматирования
+                            try:
+                                await message.bot.edit_message_text(
+                                    response_chunk + " ⏳",
+                                    chat_id=message.chat.id,
+                                    message_id=temp_message.message_id
+                                )
+                            except Exception as e3:
+                                logger.error(f"Failed to update message: {e3}")
+                                # Просто продолжаем, не обновляя сообщение
                 
                 # Сохраняем последний чанк как финальный ответ
                 final_response = response_chunk
@@ -408,30 +440,103 @@ async def process_chat_message(message: Message, state: FSMContext, user: User) 
                         message_id=temp_message.message_id
                     )
                     
-                    # Отправляем ответ частями
-                    for i in range(0, len(final_response), 4000):
-                        part = final_response[i:i+4000]
-                        await message.answer(part)
+                    # Отправляем ответ частями, сохраняя правильное форматирование Markdown
+                    parts = []
+                    # Разбиваем на части примерно по 4000 символов, но стараемся не разрывать блоки кода
+                    current_part = ""
+                    code_block_active = False
+                    
+                    for line in final_response.split('\n'):
+                        # Проверяем, не начинается/заканчивается ли строка блоком кода
+                        if line.strip().startswith("```") or line.strip().endswith("```"):
+                            code_block_active = not code_block_active
+                            
+                        # Если добавление этой строки превысит размер части и мы не внутри блока кода
+                        if len(current_part + line + '\n') > 4000 and not code_block_active:
+                            parts.append(current_part)
+                            current_part = line + '\n'
+                        else:
+                            current_part += line + '\n'
+                    
+                    # Добавляем последнюю часть
+                    if current_part:
+                        parts.append(current_part)
+                    
+                    # Если после разбиения получилась всего одна часть, проверяем её размер
+                    if len(parts) == 1 and len(parts[0]) > 4096:
+                        # Если часть всё равно слишком большая, разбиваем грубо
+                        rough_parts = []
+                        for i in range(0, len(final_response), 4000):
+                            rough_parts.append(final_response[i:i+4000])
+                        parts = rough_parts
+                    
+                    # Отправляем каждую часть
+                    for i, part in enumerate(parts):
+                        try:
+                            await message.answer(part, parse_mode="Markdown")
+                        except Exception as e:
+                            logger.warning(f"Error sending part {i+1}/{len(parts)} with markdown: {e}")
+                            # Если не удалось отправить с Markdown, отправляем без разметки
+                            try:
+                                # Пробуем с очисткой проблемных символов
+                                clean_part = part.replace("```", "")
+                                clean_part = clean_part.replace("`", "'")
+                                await message.answer(clean_part, parse_mode="Markdown")
+                            except Exception as e2:
+                                # Если и это не помогло, отправляем без форматирования
+                                await message.answer(part)
                 else:
-                    await message.bot.edit_message_text(
-                        final_response,
-                        chat_id=message.chat.id,
-                        message_id=temp_message.message_id
-                    )
+                    try:
+                        await message.bot.edit_message_text(
+                            final_response,
+                            chat_id=message.chat.id,
+                            message_id=temp_message.message_id,
+                            parse_mode="Markdown"
+                        )
+                    except Exception as e:
+                        logger.warning(f"Error sending final response with markdown: {e}")
+                        # Если не удалось отправить с Markdown, пробуем очистить проблемные символы
+                        try:
+                            clean_response = final_response.replace("```", "")
+                            clean_response = clean_response.replace("`", "'")
+                            await message.bot.edit_message_text(
+                                clean_response,
+                                chat_id=message.chat.id,
+                                message_id=temp_message.message_id,
+                                parse_mode="Markdown"
+                            )
+                        except Exception as e2:
+                            logger.warning(f"Error sending with cleaned markdown: {e2}")
+                            # Если и это не сработало, отправляем без разметки
+                            await message.bot.edit_message_text(
+                                final_response,
+                                chat_id=message.chat.id,
+                                message_id=temp_message.message_id
+                            )
             except Exception as e:
                 logger.error(f"Error sending final response: {e}")
-                await message.answer(f"⚠️ Ошибка при отправке ответа: {e}")
+                await message.answer(f"⚠️ Ошибка при отправке ответа: {e}", parse_mode="Markdown")
                 
         except Exception as e:
-            error_message = f"⚠️ Ошибка при генерации ответа: {str(e)}"
+            error_message = f"⚠️ *Ошибка* при генерации ответа: {str(e)}"
             logger.error(f"Error generating response: {e}")
             
             # Обновляем временное сообщение с ошибкой
-            await message.bot.edit_message_text(
-                error_message,
-                chat_id=message.chat.id,
-                message_id=temp_message.message_id
-            )
+            try:
+                await message.bot.edit_message_text(
+                    error_message,
+                    chat_id=message.chat.id,
+                    message_id=temp_message.message_id,
+                    parse_mode="Markdown"
+                )
+            except Exception as e_markdown:
+                # Если возникла ошибка из-за Markdown форматирования, отправляем без него
+                error_message_plain = f"⚠️ Ошибка при генерации ответа: {str(e)}"
+                await message.bot.edit_message_text(
+                    error_message_plain,
+                    chat_id=message.chat.id,
+                    message_id=temp_message.message_id
+                )
             
             await db.add_message(chat_id, "assistant", error_message)
     
@@ -464,7 +569,8 @@ async def exit_chat(message: Message, state: FSMContext, user: User) -> None:
     
     await message.answer(
         "✅ Вы вышли из текущего чата.\n\n"
-        "Используйте /chats, чтобы выбрать чат, или /newchat, чтобы создать новый."
+        "Используйте /chats, чтобы выбрать чат, или /newchat, чтобы создать новый.",
+        parse_mode="Markdown"
     )
     
     
@@ -477,7 +583,8 @@ async def clear_chat_history(message: Message, state: FSMContext, user: User) ->
     if not chat_id:
         await message.answer(
             "❓ У вас нет активного чата для очистки истории.\n\n"
-            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий."
+            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий.",
+            parse_mode="Markdown"
         )
         return
     
@@ -487,7 +594,8 @@ async def clear_chat_history(message: Message, state: FSMContext, user: User) ->
     if not chat:
         await message.answer(
             "❓ Ваш активный чат не найден.\n\n"
-            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий."
+            "Используйте /newchat, чтобы создать новый чат, или /chats, чтобы выбрать существующий.",
+            parse_mode="Markdown"
         )
         active_chats.pop(user.telegram_id, None)
         await state.clear()
@@ -497,16 +605,16 @@ async def clear_chat_history(message: Message, state: FSMContext, user: User) ->
     new_chat = await db.create_chat(
         user_id=user.telegram_id,
         title=f"{chat.title} (очищен)",
-        model=chat.model,
-        system_prompt=chat.system_prompt
+        model=chat.model
     )
     
-    # Обновляем активный чат
+    # Переключаем пользователя на новый чат
     active_chats[user.telegram_id] = new_chat.id
     await state.update_data(chat_id=new_chat.id)
     
     await message.answer(
-        f"✅ История чата очищена. Создан новый чат \"{new_chat.title}\".\n\n"
-        f"Вы можете начать новый разговор с моделью {new_chat.model}."
+        f"✅ История чата \"*{chat.title}*\" очищена.\n\n"
+        f"Создан новый чат \"*{new_chat.title}*\" с той же моделью `{chat.model}`.",
+        parse_mode="Markdown"
     )
-    logger.info(f"User {user.telegram_id} cleared chat history. Created new chat {new_chat.id}") 
+    logger.info(f"User {user.telegram_id} cleared chat {chat.id} history, created new chat {new_chat.id}") 

@@ -37,6 +37,29 @@ class OpenAIService:
                 model = config.default_model
                 logger.warning(f"Invalid model requested. Using default: {model}")
             
+            # Добавляем системное сообщение с инструкцией по использованию Markdown
+            system_message = {
+                "role": "system",
+                "content": "Пожалуйста, используйте Markdown для форматирования текста. "
+                           "Telegram поддерживает следующие элементы Markdown: "
+                           "*курсив*, **жирный**, `код`, ```предварительно отформатированный код```, "
+                           "[текст ссылки](URL). Обратите внимание, что символы '_', '*', '`', '[' "
+                           "должны быть экранированы с помощью '\\', если они не используются для форматирования."
+            }
+            
+            # Проверяем, есть ли уже системное сообщение
+            has_system_message = False
+            for msg in messages:
+                if msg.get('role') == 'system':
+                    # Если есть системное сообщение, дополняем его инструкцией по Markdown
+                    msg['content'] += " " + system_message['content']
+                    has_system_message = True
+                    break
+            
+            # Если нет системного сообщения, добавляем его в начало
+            if not has_system_message:
+                messages.insert(0, system_message)
+            
             # Проверяем каждое сообщение на корректность
             for i, msg in enumerate(messages):
                 if 'role' not in msg or 'content' not in msg:
@@ -98,6 +121,29 @@ class OpenAIService:
             if model not in config.available_models:
                 model = config.default_model
                 logger.warning(f"Invalid model requested. Using default: {model}")
+            
+            # Добавляем системное сообщение с инструкцией по использованию Markdown
+            system_message = {
+                "role": "system",
+                "content": "Пожалуйста, используйте Markdown для форматирования текста. "
+                           "Telegram поддерживает следующие элементы Markdown: "
+                           "*курсив*, **жирный**, `код`, ```предварительно отформатированный код```, "
+                           "[текст ссылки](URL). Обратите внимание, что символы '_', '*', '`', '[' "
+                           "должны быть экранированы с помощью '\\', если они не используются для форматирования."
+            }
+            
+            # Проверяем, есть ли уже системное сообщение
+            has_system_message = False
+            for msg in messages:
+                if msg.get('role') == 'system':
+                    # Если есть системное сообщение, дополняем его инструкцией по Markdown
+                    msg['content'] += " " + system_message['content']
+                    has_system_message = True
+                    break
+            
+            # Если нет системного сообщения, добавляем его в начало
+            if not has_system_message:
+                messages.insert(0, system_message)
             
             # Проверяем каждое сообщение на корректность
             for i, msg in enumerate(messages):
