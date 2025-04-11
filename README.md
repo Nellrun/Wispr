@@ -12,6 +12,7 @@ Wispr Bot is a Telegram bot that serves as a proxy for OpenAI's ChatGPT models. 
 - 🔒 Admin commands for managing users and permissions
 - 🌊 Streaming response generation with dynamic updates
 - 🔄 Request and response synchronization to prevent confusion
+- 🖼️ Image generation using DALL-E 3
 
 ## 🛠️ Installation
 
@@ -91,6 +92,7 @@ python -m wispr_bot
 - `/currentchat` - Show current chat info
 - `/clear_history` - Clear the history of the current chat
 - `/exit` - Exit current chat
+- `/image` - Generate images with DALL-E 3
 
 ### Admin Commands
 - `/admin` - Show admin panel
@@ -100,6 +102,12 @@ python -m wispr_bot
 - `/stats` - Show bot statistics
 
 ## 📋 Implementation Features
+
+### Image Generation with DALL-E 3
+The bot supports image generation with DALL-E 3, allowing users to:
+- Create images based on text prompts using the OpenAI API
+- Generate images in different sizes and qualities
+- Get both the image itself and the revised prompt used by DALL-E
 
 ### Streaming Response Generation
 The bot uses streaming response generation from the OpenAI API (streaming mode), which allows:

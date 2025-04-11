@@ -198,6 +198,79 @@ class OpenAIService:
             logger.error(f"OpenAI API streaming error: {str(e)}")
             yield f"⚠️ Ошибка соединения с OpenAI: {str(e)}"
     
+    async def generate_image(self, prompt: str, size: str = "1024x1024", model: str = "dall-e-3") -> Dict:
+        """
+        Generate an image from a text prompt using DALL-E models.
+        
+        Args:
+            prompt: The text prompt to generate an image from
+            size: The size of the image (1024x1024, 1792x1024, or 1024x1792)
+            model: The model to use (dall-e-2 or dall-e-3)
+            
+        Returns:
+            Dict containing success status, url if successful, or error message
+        """
+        try:
+            logger.info(f"Generating image with prompt: {prompt}")
+            
+            # Validate size parameter
+            valid_sizes = ["1024x1024", "1792x1024", "1024x1792"]
+            if size not in valid_sizes:
+                logger.warning(f"Invalid size: {size}. Using default 1024x1024")
+                size = "1024x1024"
+            
+            # Call the images API
+            response = await self.client.images.generate(
+                model=model,
+                prompt=prompt,
+                size=size,
+                quality="standard",
+                n=1,
+            )
+            
+            if not response.data or len(response.data) == 0:
+                logger.error("OpenAI returned empty image data")
+                return {
+                    "success": False,
+                    "error": "Получен пустой ответ от API при генерации изображения"
+                }
+            
+            # Extract and return the image URL
+            image_url = response.data[0].url
+            if not image_url:
+                logger.error("No image URL in response")
+                return {
+                    "success": False,
+                    "error": "URL изображения отсутствует в ответе API"
+                }
+                
+            return {
+                "success": True,
+                "url": image_url,
+                "revised_prompt": getattr(response.data[0], "revised_prompt", prompt)
+            }
+            
+        except openai.RateLimitError:
+            logger.error("OpenAI rate limit exceeded during image generation")
+            return {
+                "success": False,
+                "error": "Превышен лимит запросов к OpenAI. Пожалуйста, попробуйте позже."
+            }
+            
+        except openai.AuthenticationError:
+            logger.error("OpenAI authentication error during image generation")
+            return {
+                "success": False,
+                "error": "API ключ OpenAI недействителен. Пожалуйста, проверьте ваш API ключ."
+            }
+            
+        except Exception as e:
+            logger.error(f"OpenAI image generation error: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Ошибка при генерации изображения: {str(e)}"
+            }
+    
     async def validate_api_key(self, api_key: str) -> bool:
         """Validate OpenAI API key."""
         try:
