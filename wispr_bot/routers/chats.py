@@ -359,7 +359,7 @@ async def process_chat_message(message: Message, state: FSMContext, user: User) 
             # Используем потоковую генерацию ответа вместо обычной
             final_response = ""
             update_counter = 0
-            update_interval = 7  # Обновляем сообщение каждые 5 токенов, чтобы не перегружать API Telegram
+            update_interval = 20  # Обновляем сообщение каждые 5 токенов, чтобы не перегружать API Telegram
             
             async for response_chunk in openai_service.generate_response_stream(
                 messages=context_messages,
