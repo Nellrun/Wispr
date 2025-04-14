@@ -42,8 +42,8 @@ async def start_bot() -> None:
     # Register routers
     dp.include_router(admin.router)
     dp.include_router(settings.router)
-    dp.include_router(chats.router)
     dp.include_router(images.router)
+    dp.include_router(chats.router)
     
     # Register basic commands
     @dp.message(Command("start"))
